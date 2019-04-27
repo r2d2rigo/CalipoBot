@@ -35,8 +35,11 @@ namespace CalipoBot
                 {
                     case UpdateType.Message:
                         {
-                            var processor = new MessageUpdateProcessor();
+                            var processor = new BotCommandMessageProcessor();
                             await processor.ProcessMessageAsync(botClient, update.Message);
+
+                            var processor2 = new LaroMessageProcessor();
+                            await processor2.ProcessMessageAsync(botClient, update.Message);
                         }
                         break;
                 }
