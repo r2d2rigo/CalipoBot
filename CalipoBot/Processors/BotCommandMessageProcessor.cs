@@ -65,7 +65,11 @@ namespace CalipoBot.Processors
 
                                 if (processor == null)
                                 {
-                                    await botClient.SendTextMessageAsync(message.Chat.Id, "Unknown command " + botCommand, replyToMessageId: message.MessageId);
+                                    if (chat.Type == ChatType.Private)
+                                    {
+                                        await botClient.SendTextMessageAsync(message.Chat.Id, "Unknown command " + botCommand, replyToMessageId: message.MessageId);
+                                    }
+
                                     return;
                                 }
 
