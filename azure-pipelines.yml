@@ -23,7 +23,10 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy artifacts'
   inputs:
-    targetFolder: '$(Build.ArtifactStagingDirectory)'    
+    Contents: '**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    CleanTargetFolder: true
+    OverWrite: true  
 - task: PublishBuildArtifacts@1    
   displayName: 'Publish Artifact: drop'
   inputs:
