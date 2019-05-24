@@ -72,8 +72,14 @@ namespace CalipoBot.Commands
                 foreach (var rankingUser in groupedRankingEntries)
                 {
                     var userInfo = await botClient.GetChatMemberAsync(message.Chat.Id, rankingUser.Key);
+                    var userName = userInfo.User.Username;
 
-                    stringBuilder.AppendLine($"{_rankingEmojis[emojiIndex]} {userInfo.User.Username} => {rankingUser.Count()}");
+                    if (string.IsNullOrWhiteSpace(userName))
+                    {
+                        userName = $"{userInfo.User.FirstName} {userInfo.User.LastName}";
+                    }
+
+                    stringBuilder.AppendLine($"{_rankingEmojis[emojiIndex]} {userName} ➡️ {rankingUser.Count()}");
 
                     emojiIndex++;
                 }
