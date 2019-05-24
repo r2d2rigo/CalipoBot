@@ -23,6 +23,7 @@ namespace CalipoBot.Processors
             this.commandProcessors.Add(new JoinGroupCommand());
             this.commandProcessors.Add(new LeaveGroupCommand());
             this.commandProcessors.Add(new NotifyGroupCommand());
+            this.commandProcessors.Add(new LaroRankingCommand());
         }
 
         public async Task ProcessMessageAsync(ITelegramBotClient botClient, Message message)
