@@ -3,6 +3,7 @@ using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -11,6 +12,20 @@ namespace CalipoBot.Commands
 {
     public class LaroRankingCommand : IBotCommand
     {
+        private string[] _rankingEmojis =
+        {
+            "🥇",
+            "🥈",
+            "🥉",
+            "4️⃣",
+            "5️⃣",
+            "6️⃣",
+            "7️⃣",
+            "8️⃣",
+            "9️⃣",
+            "🔟",
+        };
+
         public string Command
         {
             get
@@ -44,13 +59,26 @@ namespace CalipoBot.Commands
                 );
 
             var rankingEntries = await laroRankingTable.ExecuteQuerySegmentedAsync(query, null);
-            var groupedRankingEntries = rankingEntries.GroupBy(e => e.UserId).OrderByDescending(g => g.Count());
+            var groupedRankingEntries = rankingEntries.GroupBy(e => e.UserId).OrderByDescending(g => g.Count()).Take(10);
 
-            foreach (var rankingUser in groupedRankingEntries)
+            if (groupedRankingEntries.Count() > 0)
             {
-                var userInfo = await botClient.GetChatMemberAsync(message.Chat.Id, rankingUser.Key);
+                var stringBuilder = new StringBuilder();
+                var emojiIndex = 0;
 
-                await botClient.SendTextMessageAsync(message.Chat.Id, $"{userInfo.User.Username} : {rankingUser.Count()}");
+                stringBuilder.AppendLine("🏆 LARO RANKING 🏆");
+                stringBuilder.AppendLine();
+
+                foreach (var rankingUser in groupedRankingEntries)
+                {
+                    var userInfo = await botClient.GetChatMemberAsync(message.Chat.Id, rankingUser.Key);
+
+                    stringBuilder.AppendLine($"{_rankingEmojis[emojiIndex]} {userInfo.User.Username} => {rankingUser.Count()}");
+
+                    emojiIndex++;
+                }
+
+                await botClient.SendTextMessageAsync(message.Chat.Id, stringBuilder.ToString());
             }
         }
     }
