@@ -67,7 +67,7 @@ namespace CalipoBot.Processors
                             {
                                 case MessageEntityType.Url:
                                     {
-                                        var urlString = message.EntityValues.Skip(entityIndex).First();
+                                        var urlString = message.EntityValues.Skip(entityIndex).First().ToLowerInvariant();
 
                                         var query = new TableQuery<GroupSubscriptionEntity>().
                                             Where(
