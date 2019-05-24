@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.InputFiles;
 
 namespace CalipoBot.Processors
 {
@@ -92,7 +93,8 @@ namespace CalipoBot.Processors
                                                 Timestamp = DateTimeOffset.UtcNow,
                                             }));
 
-                                            await botClient.SendTextMessageAsync(message.Chat.Id, $"Laro, laro, esto es un repost bien claro", replyToMessageId: message.MessageId);
+                                            await botClient.SendPhotoAsync(message.Chat.Id, new InputOnlineFile(Environment.GetEnvironmentVariable("LARO_IMAGE_FILEID")), replyToMessageId: message.MessageId);
+                                            // await botClient.SendTextMessageAsync(message.Chat.Id, $"Laro, laro, esto es un repost bien claro", replyToMessageId: message.MessageId);
 
                                             return;
                                         }
