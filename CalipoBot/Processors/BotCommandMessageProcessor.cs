@@ -122,7 +122,7 @@ namespace CalipoBot.Processors
         {
             var administrators = await botClient.GetChatAdministratorsAsync(chat.Id);
 
-            if (!administrators.Any(a => a.User.Id == user.Id))
+            if (administrators.Any(a => a.User.Id == user.Id))
             {
                 return true;
             }
