@@ -23,6 +23,7 @@ namespace CalipoBot.Processors
             this.commandProcessors.Add(new JoinGroupCommand());
             this.commandProcessors.Add(new LeaveGroupCommand());
             this.commandProcessors.Add(new NotifyGroupCommand());
+            this.commandProcessors.Add(new LaroRankingCommand());
         }
 
         public async Task ProcessMessageAsync(ITelegramBotClient botClient, Message message)
@@ -65,7 +66,11 @@ namespace CalipoBot.Processors
 
                                 if (processor == null)
                                 {
-                                    await botClient.SendTextMessageAsync(message.Chat.Id, "Unknown command " + botCommand, replyToMessageId: message.MessageId);
+                                    if (chat.Type == ChatType.Private)
+                                    {
+                                        await botClient.SendTextMessageAsync(message.Chat.Id, "Unknown command " + botCommand, replyToMessageId: message.MessageId);
+                                    }
+
                                     return;
                                 }
 

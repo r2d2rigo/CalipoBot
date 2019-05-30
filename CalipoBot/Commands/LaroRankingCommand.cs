@@ -1,7 +1,9 @@
-﻿using Microsoft.WindowsAzure.Storage.Auth;
+﻿using CalipoBot.Processors;
+using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -10,11 +12,25 @@ namespace CalipoBot.Commands
 {
     public class LaroRankingCommand : IBotCommand
     {
+        private string[] _rankingEmojis =
+        {
+            "🥇",
+            "🥈",
+            "🥉",
+            "4️⃣",
+            "5️⃣",
+            "6️⃣",
+            "7️⃣",
+            "8️⃣",
+            "9️⃣",
+            "🔟",
+        };
+
         public string Command
         {
             get
             {
-                return "/laroranking";
+                return "/larorank";
             }
         }
 
@@ -29,51 +45,47 @@ namespace CalipoBot.Commands
 
         public async Task ExecuteAsync(ITelegramBotClient botClient, Message message)
         {
-            var messageParts = message.Text.Split(' ');
-
-            if (messageParts.Length < 2)
-            {
-                await botClient.SendTextMessageAsync(message.Chat.Id, "Please specify a group name", replyToMessageId: message.MessageId);
-
-                return;
-            }
-
-            var notificationGroupName = messageParts[1].ToLowerInvariant();
-
             var tableClient = new CloudTableClient(
                 new Uri(Environment.GetEnvironmentVariable("STORAGE_URL")),
-                new StorageCredentials(Environment.GetEnvironmentVariable("STORAGE_ACCOUNT_NAME"), Environment.GetEnvironmentVariable("STORAGE_ACCOUNT_KEY")));
+                new StorageCredentials(Environment.GetEnvironmentVariable("STORAGE_ACCOUNT_NAME"),
+                Environment.GetEnvironmentVariable("STORAGE_ACCOUNT_KEY")));
 
-            var subscriptionsTable = tableClient.GetTableReference("NotificationGroups");
-            await subscriptionsTable.CreateIfNotExistsAsync();
+            var laroRankingTable = tableClient.GetTableReference("LaroRanking");
+            await laroRankingTable.CreateIfNotExistsAsync();
 
-            var query = new TableQuery<GroupSubscriptionEntity>().
+            var query = new TableQuery<LaroRankingEntity>().
                 Where(
-                    TableQuery.CombineFilters
-                    (
-                        TableQuery.CombineFilters
-                        (
-                            TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, message.Chat.Id.ToString()),
-                            TableOperators.And,
-                            TableQuery.GenerateFilterCondition("UserId", QueryComparisons.Equal, message.From.Id.ToString())
-                        ),
-                        TableOperators.And,
-                        TableQuery.GenerateFilterCondition("GroupName", QueryComparisons.Equal, notificationGroupName)
-                    )
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, message.Chat.Id.ToString())
                 );
 
-            var existingSubscription = (await subscriptionsTable.ExecuteQuerySegmentedAsync(query, null)).FirstOrDefault();
+            var rankingEntries = await laroRankingTable.ExecuteQuerySegmentedAsync(query, null);
+            var groupedRankingEntries = rankingEntries.GroupBy(e => e.UserId).OrderByDescending(g => g.Count()).Take(10);
 
-            if (existingSubscription == null)
+            if (groupedRankingEntries.Count() > 0)
             {
-                await botClient.SendTextMessageAsync(message.Chat.Id, $"You aren't subscribed to the group \"{notificationGroupName}\"", replyToMessageId: message.MessageId);
+                var stringBuilder = new StringBuilder();
+                var emojiIndex = 0;
 
-                return;
+                stringBuilder.AppendLine("🏆 LARO RANKING 🏆");
+                stringBuilder.AppendLine();
+
+                foreach (var rankingUser in groupedRankingEntries)
+                {
+                    var userInfo = await botClient.GetChatMemberAsync(message.Chat.Id, rankingUser.Key);
+                    var userName = userInfo.User.Username;
+
+                    if (string.IsNullOrWhiteSpace(userName))
+                    {
+                        userName = $"{userInfo.User.FirstName} {userInfo.User.LastName}";
+                    }
+
+                    stringBuilder.AppendLine($"{_rankingEmojis[emojiIndex]} {userName} ➡️ {rankingUser.Count()}");
+
+                    emojiIndex++;
+                }
+
+                await botClient.SendTextMessageAsync(message.Chat.Id, stringBuilder.ToString());
             }
-
-            await subscriptionsTable.ExecuteAsync(TableOperation.Delete(existingSubscription));
-
-            await botClient.SendTextMessageAsync(message.Chat.Id, $"You have been removed from the group \"{notificationGroupName}\"", replyToMessageId: message.MessageId);
         }
     }
 }
