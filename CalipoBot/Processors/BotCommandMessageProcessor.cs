@@ -69,15 +69,21 @@ namespace CalipoBot.Processors
                                     return;
                                 }
 
+                                if (processor.AccessLevel > AccessLevel.Public)
+                                {
+
+                                }                                
+
                                 switch (processor.AccessLevel)
                                 {
                                     case AccessLevel.Public:
                                         break;
                                     case AccessLevel.Administrator:
                                         {
-                                            var administrators = await botClient.GetChatAdministratorsAsync(message.Chat.Id);
+                                            var isAdmin = await IsAdministratorAsync(botClient, message.Chat, message.From);
+                                            var isOwner = await IsOwnerAsync(message.From);
 
-                                            if (!administrators.Any(a => a.User.Id == message.From.Id))
+                                            if (!isAdmin && !isOwner)
                                             {
                                                 await botClient.SendTextMessageAsync(message.Chat.Id, "Sorry, only admins can run that command.", replyToMessageId: message.MessageId);
 
@@ -87,23 +93,12 @@ namespace CalipoBot.Processors
                                         break;
                                     case AccessLevel.Owner:
                                         {
-                                            var adminUserIds = Environment.GetEnvironmentVariable("BOT_ADMIN_USERIDS");
-                                            var adminIds = adminUserIds.Split(';');
+                                            var isOwner = await IsOwnerAsync(message.From);
 
-                                            bool isAdmin = false;
-                                            foreach (var id in adminIds)
-                                            {
-                                                var idNumber = int.Parse(id);
-                                                if (message.From.Id == idNumber)
-                                                {
-                                                    isAdmin = true;
-                                                    break;
-                                                }
-                                            }
-
-                                            if (!isAdmin)
+                                            if (!isOwner)
                                             {
                                                 await botClient.SendTextMessageAsync(message.Chat.Id, "Sorry, only owners can run that command.", replyToMessageId: message.MessageId);
+
                                                 return;
                                             }
                                         }
@@ -116,6 +111,36 @@ namespace CalipoBot.Processors
                     }
                     break;
             }
+        }
+
+        private static async Task<bool> IsAdministratorAsync(ITelegramBotClient botClient, Chat chat, User user)
+        {
+            var administrators = await botClient.GetChatAdministratorsAsync(chat.Id);
+
+            if (!administrators.Any(a => a.User.Id == user.Id))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static async Task<bool> IsOwnerAsync(User user)
+        {
+            var adminUserIds = Environment.GetEnvironmentVariable("BOT_ADMIN_USERIDS");
+            var adminIds = adminUserIds.Split(';');
+
+            foreach (var id in adminIds)
+            {
+                var idNumber = int.Parse(id);
+
+                if (user.Id == idNumber)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
